@@ -11,13 +11,8 @@
  */
 package main;
 
-import java.io.ObjectInputStream.GetField;
-import java.time.chrono.IsoChronology;
+import java.lang.reflect.Method;
 import java.util.NoSuchElementException;
-
-import org.hamcrest.core.IsInstanceOf;
-import org.omg.CORBA.portable.ValueBase;
-
 /**
  * @author 孙士涵<shsun@pku.edu.cn>
  * @since 2016年4月10日
@@ -59,7 +54,15 @@ public class MyList<E> implements ICollection<E> {
 	//add element to the position before head
 	//which is same as adding it to the end of myList
 	public boolean add(E e) {
-		if (e instanceof Comparable<?>)
+		boolean hasMethod = false;
+		Method[] methods = e.getClass().getMethods();
+		for (Method m : methods) {
+		  if (m.getName().equals("compareTo")) {
+		    hasMethod = true;
+		    break;
+		  }
+		}
+		if(hasMethod)
 			return addComparable(e);
 		addBefore(e, head);
 		return true;
@@ -67,17 +70,19 @@ public class MyList<E> implements ICollection<E> {
 	
 	
 	public boolean addComparable(E e) {
-		/* STUB: 
+		@SuppressWarnings("unchecked")
 		Comparable<E> s = (Comparable<E>) e;
-		if(head == null)
-			head 
-		Node<E> i = head;
-		while(s.compareTo(i.value)) {
-			i = i.next;
-
+		if(size == 0) {
+			addBefore(e, head);
+			return true;
 		}
-		 */
-		return true;
+		
+		// 加到第一个比它大的前面
+		for (Node<E> eNode = head.next;; eNode=eNode.next)
+			if(eNode.value == null || s.compareTo(eNode.value) <= 0) {
+				addBefore(e, eNode);
+				return true;
+			}
 	}
 
 
@@ -117,22 +122,10 @@ public class MyList<E> implements ICollection<E> {
 
 	//empty myList
 	public void clear() {
-		Node<E> eNode = head.next;
-		//set the prev to null
-		//set current node to null
-		//set next node as new current node
-		
-		while( eNode!=head){
-			Node<E> next = eNode.next;
-			eNode.next = eNode.prev = null;
-			eNode.value= null;
-			eNode = null;
-		}
-		
-		head.next=head.prev = head;
-		//resize to zero
+		head = new Node<E>(null,null,null); 
+		head.next=head.prev=head;
+		//size of the list
 		size=0;
-		//modCount++;	
 	}
 
 	public Object[] toArray() {
@@ -307,18 +300,19 @@ public class MyList<E> implements ICollection<E> {
 	
 	//search from beginning to the end, return the index of object
 	//in null, return -1
+	@SuppressWarnings("unchecked")
 	public int indexOf(Object object){
 		int index=0;
 		if (object==null) {
-			for (Node eNode=head.next; eNode!= head; eNode=eNode.next) {
+			for (Node<E> eNode=head.next; eNode!= head; eNode=eNode.next) {
 				if (eNode.value==null) {
 					return index;
 				}
 				index++;
 			}
 		}else {
-			for(Node eNode=head.next; eNode!= head; eNode=eNode.next) {
-				if (eNode.equals(eNode.value)) {
+			for(Node<E> eNode=head.next; eNode!= head; eNode=eNode.next) {
+				if (((E) object).equals(eNode.value)) {
 					return index;
 				}
 				index++;
@@ -335,6 +329,7 @@ public class MyList<E> implements ICollection<E> {
 		
 		
 		//add collection to myList, from the index of myList
+		@SuppressWarnings("unchecked")
 		public boolean addAll(int index, ICollection<? extends E> collection){
 			if (index<0 || index >size) {
 				throw new IndexOutOfBoundsException("Index: "+index+", Size: "+size);

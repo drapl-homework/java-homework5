@@ -52,5 +52,5 @@ public interface ICollection<E> {
      * 返回包含有所有元素的数组
      * @return
      */
-    E[] toArray();
+    Object[] toArray();
 }
